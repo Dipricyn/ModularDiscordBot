@@ -1,0 +1,25 @@
+{
+  "name": "on-time-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node --harmony bot.js"
+  },
+  "keywords": [
+    "discord",
+    "bot"
+  ],
+  "author": "Matthias Wagner",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^11.3.2",
+    "moment": "^2.22.2",
+    "mysql": "^2.15.0",
+    "winston": "^3.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dipricyn/OnTimeBot"
+  }
+}
