@@ -15,7 +15,6 @@
   "dependencies": {
     "discord.js": "^11.3.2",
     "moment": "^2.22.2",
-    "mysql": "^2.15.0",
     "winston": "^3.0.0"
   },
   "repository": {
