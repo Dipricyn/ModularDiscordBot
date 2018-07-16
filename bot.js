@@ -30,7 +30,6 @@ function loadMemberData() {
 function saveMemberData() {
     try {
         const str = JSON.stringify(guildMemberData)
-        logger.info(str)
         fs.writeFile (memberDataFile, JSON.stringify(guildMemberData), function(err) {
             if (err) {
                 logger.info(`${err} occured while saving member data.`)
