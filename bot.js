@@ -23,7 +23,7 @@ function loadMemberData() {
             }
         })
     } catch (err) {
-        logger.info(`${err} occured while loading member data.`)        
+        logger.error(`${err} occured while loading member data.`)        
     }
 }
 
@@ -32,11 +32,11 @@ function saveMemberData() {
         const str = JSON.stringify(guildMemberData)
         fs.writeFile (memberDataFile, JSON.stringify(guildMemberData), function(err) {
             if (err) {
-                logger.info(`${err} occured while saving member data.`)
+                logger.error(`${err} occured while saving member data.`)
             }
         })
     } catch (err) {
-        logger.info(`${err} occured while loading member data.`)        
+        logger.error(`${err} occured while loading member data.`)        
     }
 }
 
@@ -60,16 +60,30 @@ function updateTimes() {
 const logger = Winston.createLogger({
     level: 'info',
     format: Winston.format.json(),
-    transports: []
-})
-logger.add(new Winston.transports.Console({
-    format: Winston.format.simple()
-}));
+    transports: [
+      //
+      // - Write to all logs with level `info` and below to `combined.log` 
+      // - Write all logs error (and below) to `error.log`.
+      //
+      new Winston.transports.File({ filename: `${dataDir}error.log`, level: 'error' }),
+      new Winston.transports.File({ filename: `${dataDir}combined.log` })
+    ]
+  });
+  
+  //
+  // If we're not in production then log to the `console` with the format:
+  // `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
+  // 
+  if (process.env.NODE_ENV !== 'production') {
+    logger.add(new Winston.transports.Console({
+      format: Winston.format.simple()
+    }));
+  }
 
 // global variables
 let guildMemberData = {}
 fs.mkdir(dataDir, err => {
-    if(err) logger.log(`failed to create directory ${dataDir}: ${err}`)
+    if(err) logger.warn(`failed to create directory ${dataDir}: ${err}`)
 })
 loadMemberData()
 
@@ -110,7 +124,6 @@ client.on('presenceUpdate', (oldMember, newMember) => {
                 saveMemberData()
             }
             data.isOffline = true
-            logger.debug("")
         }
     } else {
         if (name in guildMemberData) {
