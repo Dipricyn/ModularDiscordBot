@@ -11,6 +11,19 @@ const dataDir = 'data/'
 const memberDataFile = `${dataDir}memberdata.json`
 
 
+function scanPresences() {
+    if(client.guilds.size===0){
+        return
+    }
+    const guild = client.guilds.values().next().value
+    const values = guild.members.values()
+    for(let member of values) {
+        if(member.user.presence!=="offline") {
+            handlePresenceUpdate(member)
+        }
+    }
+}
+
 function printTimes(channel) {
     let msg = ""
     for (const [key, value] of Object.entries(memberDataContainer.data)) {
@@ -20,6 +33,32 @@ function printTimes(channel) {
         msg = "No one listed."
     }
     channel.send(msg)
+}
+
+function handlePresenceUpdate(newMember) {
+    const status = newMember.user.presence.status
+    const name = newMember.user.username
+    if (status == 'offline') {
+        if (name in memberDataContainer.data) {
+            let data = memberDataContainer.data[name]
+            if (!data.isOffline) {
+                const timeDiff = moment.duration(moment().diff(data.startTime))
+                data.totalTime.add(timeDiff)
+                memberDataContainer.saveMemberData()
+            }
+            data.isOffline = true
+        }
+    } else {
+        if (name in memberDataContainer.data) {
+            let data = memberDataContainer.data[name]
+            data.isOffline = false
+            data.startTime = moment()
+        } else {
+            let userdata = new UserData(moment())
+            memberDataContainer.data[name] = userdata
+        }
+        memberDataContainer.saveMemberData()
+    }
 }
 
 fs.mkdir(dataDir, err => {
@@ -46,6 +85,7 @@ client.on('message', message => {
             break;
             // !times
         case 'times':
+            scanPresences()
             memberDataContainer.updateTimes()
             printTimes(message.channel)
             break;
@@ -54,29 +94,11 @@ client.on('message', message => {
 });
 
 client.on('presenceUpdate', (oldMember, newMember) => {
-    const status = newMember.user.presence.status
-    const name = newMember.user.username
-    if (status == 'offline') {
-        if (name in memberDataContainer.data) {
-            let data = memberDataContainer.data[name]
-            if (!data.isOffline) {
-                const timeDiff = moment.duration(moment().diff(data.startTime))
-                data.totalTime.add(timeDiff)
-                memberDataContainer.saveMemberData()
-            }
-            data.isOffline = true
-        }
-    } else {
-        if (name in memberDataContainer.data) {
-            let data = memberDataContainer.data[name]
-            data.isOffline = false
-            data.startTime = moment()
-        } else {
-            let userdata = new UserData(moment())
-            memberDataContainer.data[name] = userdata
-        }
-        memberDataContainer.saveMemberData()
-    }
+    handlePresenceUpdate(newMember)
 })
 
-client.login(auth.token)
+client.login(auth.token).then( userToken => {
+    scanPresences()
+}).catch(err => {
+    if(err) logger.error(`failed to login: ${err}`)
+})
