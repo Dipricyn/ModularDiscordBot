@@ -11,21 +11,21 @@ class UserDataContainer {
     }
 
     loadMemberData() {
-        let data = this.data
+        let that = this
         try {
             fs.readFile(this.memberDataFilePath, function(err,content) {
                 if(err) {
                     logger.info(`${err} occured while loading member data.`)
                 } else {
                     try {
-                        data = JSON.parse(content, (key, value) => {
+                        that.data = JSON.parse(content, (key, value) => {
                             switch(key){
                                 case 'startTime': return moment(value)
                                 case 'totalTime': return moment.duration(value)
                             }
                             return value
                         })
-                        for (const [name, member] of Object.entries(data)) {
+                        for (let [name, member] of Object.entries(that.data)) {
                             member.isOffline = true
                         }
                     } catch (err) {
