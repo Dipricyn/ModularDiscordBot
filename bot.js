@@ -176,10 +176,10 @@ function playSound(path, message) {
 
 function everySecond() {
     if(noticeMeTimer == -1) {
-        noticeMeTimer = Math.random() * 7200
+        noticeMeTimer = Math.random() * 3600
     }
     else if(noticeMeTimer <= 0) {
-        noticeMeTimer = Math.random() * 7200
+        noticeMeTimer = Math.random() * 3600
         let count = 0
         let member
         for(let [key, m] of client.guilds.get("259460880742350848").members) {
