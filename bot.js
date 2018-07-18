@@ -7,6 +7,7 @@ const UserDataContainer = require('./userdatacontainer.js');
 const moment = require('moment');
 const fs = require('fs');
 
+
 const dataDir = 'data/'
 const memberDataFile = `${dataDir}memberdata.json`
 const moveDataFile = `${dataDir}moveData.json`
