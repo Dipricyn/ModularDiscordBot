@@ -10,10 +10,10 @@ const fs = require('fs');
 const dataDir = 'data/'
 const memberDataFile = `${dataDir}memberdata.json`
 const moveDataFile = `${dataDir}moveData.json`
-var bot = new Discord.Client();
 var isReady = true
-
-bot.login("NDY4ODM2Njg0MjM1Mjc2Mjk5.DjAFew.xRSGOaL8dhM2k11jcjLYPM2P82I")
+var last = -1
+var noticeMeTimer = -1
+const MURLOC_COUNT = 6
 
 function printTimes(channel) {
     let msg = ""
@@ -46,12 +46,12 @@ client.on('message', message => {
             // !ping
         case 'ping':
             message.channel.send('pong')
-            break;
+            break
             // !times
         case 'times':
             memberDataContainer.updateTimes()
             printTimes(message.channel)
-            break;
+            break
         case 'safeMeFrom':
             fs.readFile(moveDataFile, function(err,content) {
                 if(err) {
@@ -107,8 +107,8 @@ client.on('message', message => {
                     }
                 }
             })
-            message.delete();
-            break;
+            message.delete()
+            break
         case 'sacrificeMeFor':
             fs.readFile(moveDataFile, function(err,content) {
                 if (err) {
@@ -133,23 +133,80 @@ client.on('message', message => {
             break
         case 'mrgl':
             if(isReady) {
-                isReady = false
-                let voiceChannel = message.member.voiceChannel
-                voiceChannel.join().then(connection => {
-                    console.debug("Joined channel")
-                    const dispatcher = connection.playFile(`${dataDir}murloc.mp3`)
-                    dispatcher.on("end", end => {
-                        voiceChannel.leave()
-                        isReady = true
-                    })
-                }).catch(err => logger.error(`${err} occured while saving move data.`))
+                r = Math.floor(Math.random() * MURLOC_COUNT)
+                while(last == r) {
+                    r = Math.floor(Math.random() * MURLOC_COUNT)
+                }
+                last = r
+                playSound(`murloc${r}.mp3`, message)
             }
-            message.delete();
-            break;
+            break
+        case 'esportler':
+            playSound(`esportler.mp3`, message)
+            break
+        case 'ok':
+            playSound(`ok.mp3`, message)
+            break
+        case 'niggers':
+            playSound(`niggers.mp3`, message)
+            break
+        case 'avocado':
+            playSound('freshavocado.mp3', message)
+            break
         }
     }
     
 });
+
+function playSound(path, message) {
+    if(isReady) {
+        isReady = false
+        let voiceChannel = message.member.voiceChannel
+        voiceChannel.join().then(connection => {
+            const dispatcher = connection.playFile(`${dataDir}${path}`)
+            dispatcher.on("end", end => {
+                voiceChannel.leave()
+                isReady = true
+            })
+        }).catch(err => logger.error(`${err} occured while saving move data.`))
+    }
+    message.delete();
+}
+
+function everySecond() {
+    if(noticeMeTimer == -1) {
+        noticeMeTimer = Math.random() * 7200
+    }
+    else if(noticeMeTimer <= 0) {
+        noticeMeTimer = Math.random() * 7200
+        let count = 0
+        let member
+        for(let [key, m] of client.guilds.get("259460880742350848").members) {
+            if(m.voiceChannel !== undefined) {
+                if(Math.random() < 1/++count) {
+                    member = m
+                }
+            }
+        }
+        member.voiceChannel.join().then(connection => {
+            if(isReady) {
+                r = Math.floor(Math.random() * MURLOC_COUNT)
+                while(last == r) {
+                    r = Math.floor(Math.random() * MURLOC_COUNT)
+                }
+                last = r
+                const dispatcher = connection.playFile(`${dataDir}murloc${r}.mp3`)
+                dispatcher.on("end", end => {
+                    member.voiceChannel.leave()
+                    isReady = true
+                })
+            }
+        }).catch(err => logger.error(`${err} occured while saving move data.`))
+    }
+    noticeMeTimer -= 1
+    console.debug(`I'll be back in ${noticeMeTimer} seconds`)
+    setTimeout(everySecond, 1000);
+}
 
 client.on('presenceUpdate', (oldMember, newMember) => {
     const status = newMember.user.presence.status
@@ -197,4 +254,5 @@ client.on('presenceUpdate', (oldMember, newMember) => {
     }
 })
 
+everySecond()
 client.login(auth.token)
