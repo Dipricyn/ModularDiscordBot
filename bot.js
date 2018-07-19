@@ -12,16 +12,26 @@ const memberDataFile = `${dataDir}memberdata.json`
 
 
 function scanPresences() {
+    logger.info("starting scan")
     if(client.guilds.size===0){
         return
     }
     const guild = client.guilds.values().next().value
     const values = guild.members.values()
-    for(let member of values) {
-        if(member.user.presence!=="offline") {
-            handlePresenceUpdate(member)
+    for(let newMember of values) {
+        const username = newMember.user.username
+        const status = newMember.presence.status        
+        if(status!=="offline") {
+            if(!(username in memberDataContainer.data)) {
+                memberDataContainer.data[username] = new UserData()
+                logger.info(`found new user ${username} while scanning`)
+            }
+            memberDataContainer.data[username].isOffline = false
+            memberDataContainer.data[username].startTime = moment()
+            logger.info(`${username} was already online while scanning`)
         }
     }
+    logger.info("------------finished scan-------------")
 }
 
 function printTimes(channel) {
@@ -35,34 +45,37 @@ function printTimes(channel) {
     channel.send(msg)
 }
 
-function handlePresenceUpdate(newMember) {
-    const status = newMember.user.presence.status
-    const name = newMember.user.username
-    if (status == 'offline') {
-        if (name in memberDataContainer.data) {
-            let data = memberDataContainer.data[name]
-            if (!data.isOffline) {
-                const timeDiff = moment.duration(moment().diff(data.startTime))
-                data.totalTime.add(timeDiff)
-                memberDataContainer.saveMemberData()
-            }
+function handlePresenceUpdate(user, oldStatus, newStatus) {
+    logger.info(`${user} is now ${newStatus}.`)
+    if (newStatus === 'offline' && oldStatus !== 'offline') { //someone went offline
+        if (user in memberDataContainer.data) {
+            let data = memberDataContainer.data[user]
+            logger.info(`\told time was ${data.totalTime.asMinutes()}`)
+            logger.info(`\tstart time was ${data.startTime.format()}`)
+            const timeDiff = moment.duration(moment().diff(data.startTime))
+            data.totalTime.add(timeDiff)
+            logger.info(`\twas on for ${timeDiff.asMinutes()}`)
             data.isOffline = true
+            memberDataContainer.saveMemberData()
+        } else {
+            logger.warn("\tuntracked user went offline")
         }
-    } else {
-        if (name in memberDataContainer.data) {
-            let data = memberDataContainer.data[name]
+    } else if (newStatus !== 'offline' && oldStatus === 'offline') { //someone went online
+        if (user in memberDataContainer.data) {
+            let data = memberDataContainer.data[user]
             data.isOffline = false
             data.startTime = moment()
         } else {
-            let userdata = new UserData(moment())
-            memberDataContainer.data[name] = userdata
+            let userdata = new UserData()
+            memberDataContainer.data[user] = userdata
+            logger.info(`\tnow tracking`)
         }
         memberDataContainer.saveMemberData()
     }
 }
 
 fs.mkdir(dataDir, err => {
-    if(err) logger.warn(`failed to create directory ${dataDir}: ${err}`)
+    if(err && (err.code !== 'EEXIST')) logger.warn(`failed to create directory ${dataDir}: ${err}`)
 })
 let memberDataContainer = new UserDataContainer(memberDataFile)
 memberDataContainer.loadMemberData()
@@ -85,7 +98,6 @@ client.on('message', message => {
             break;
             // !times
         case 'times':
-            scanPresences()
             memberDataContainer.updateTimes()
             printTimes(message.channel)
             break;
@@ -94,11 +106,11 @@ client.on('message', message => {
 });
 
 client.on('presenceUpdate', (oldMember, newMember) => {
-    handlePresenceUpdate(newMember)
+    handlePresenceUpdate(newMember.user.username, 
+        oldMember.presence.status, 
+        newMember.presence.status)
 })
 
-client.login(auth.token).then( userToken => {
+client.login(auth.token).then( () => {
     scanPresences()
-}).catch(err => {
-    if(err) logger.error(`failed to login: ${err}`)
 })

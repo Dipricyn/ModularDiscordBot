@@ -1,18 +1,21 @@
-const Winston = require('winston');
+const {transports, createLogger, format} = require('winston');
 
 const logDir = 'data/'
 
 // Configure logger settings
-const logger = Winston.createLogger({
+const logger = createLogger({
     level: 'info',
-    format: Winston.format.json(),
+    format: format.combine(
+      format.timestamp(),
+      format.json()
+    ),
     transports: [
       //
       // - Write to all logs with level `info` and below to `combined.log` 
       // - Write all logs error (and below) to `error.log`.
       //
-      new Winston.transports.File({ filename: `${logDir}error.log`, level: 'error' }),
-      new Winston.transports.File({ filename: `${logDir}combined.log` })
+      new transports.File({ filename: `${logDir}error.log`, level: 'error', timestamp: true }),
+      new transports.File({ filename: `${logDir}combined.log`, timestamp: true })
     ]
   });
   
@@ -21,8 +24,8 @@ const logger = Winston.createLogger({
   // `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
   // 
   if (process.env.NODE_ENV !== 'production') {
-    logger.add(new Winston.transports.Console({
-      format: Winston.format.simple()
+    logger.add(new transports.Console({
+      format: format.simple()
     }));
   }
 

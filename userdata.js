@@ -1,12 +1,12 @@
 const moment = require('moment');
 
 class UserData {
-    constructor(startTime) {
+    constructor() {
         this.isOffline = false
-        this.startTime = startTime
+        this.startTime = moment()
         this.totalTime = moment.duration(0)
     }
 
-};
+}
 
 module.exports = UserData
