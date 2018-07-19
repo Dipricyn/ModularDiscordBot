@@ -12,7 +12,6 @@ const memberDataFile = `${dataDir}memberdata.json`
 
 
 function scanPresences() {
-    logger.info("starting scan")
     if(client.guilds.size===0){
         return
     }
@@ -24,14 +23,11 @@ function scanPresences() {
         if(status!=="offline") {
             if(!(username in memberDataContainer.data)) {
                 memberDataContainer.data[username] = new UserData()
-                logger.info(`found new user ${username} while scanning`)
             }
             memberDataContainer.data[username].isOffline = false
             memberDataContainer.data[username].startTime = moment()
-            logger.info(`${username} was already online while scanning`)
         }
     }
-    logger.info("------------finished scan-------------")
 }
 
 function printTimes(channel) {
@@ -46,19 +42,15 @@ function printTimes(channel) {
 }
 
 function handlePresenceUpdate(user, oldStatus, newStatus) {
-    logger.info(`${user} is now ${newStatus}.`)
     if (newStatus === 'offline' && oldStatus !== 'offline') { //someone went offline
         if (user in memberDataContainer.data) {
             let data = memberDataContainer.data[user]
-            logger.info(`\told time was ${data.totalTime.asMinutes()}`)
-            logger.info(`\tstart time was ${data.startTime.format()}`)
             const timeDiff = moment.duration(moment().diff(data.startTime))
             data.totalTime.add(timeDiff)
-            logger.info(`\twas on for ${timeDiff.asMinutes()}`)
             data.isOffline = true
             memberDataContainer.saveMemberData()
         } else {
-            logger.warn("\tuntracked user went offline")
+            logger.warn(`untracked user ${user} went offline: dropping time`)
         }
     } else if (newStatus !== 'offline' && oldStatus === 'offline') { //someone went online
         if (user in memberDataContainer.data) {
@@ -68,7 +60,6 @@ function handlePresenceUpdate(user, oldStatus, newStatus) {
         } else {
             let userdata = new UserData()
             memberDataContainer.data[user] = userdata
-            logger.info(`\tnow tracking`)
         }
         memberDataContainer.saveMemberData()
     }

@@ -26,7 +26,6 @@ class UserDataContainer {
                             user.totalTime = moment.duration(data["totalTime"])
                             user.isOffline = true
                             that.data[username] = user
-                            logger.info(`loaded ${username} with ${user.totalTime.asMinutes()}`)
                         }
                     } catch (err) {
                         logger.error(`${err} occured while parsing member data:\n${content}`)        
@@ -62,7 +61,6 @@ class UserDataContainer {
     
     updateTimes() {
         for (const [key, member] of Object.entries(this.data)) {
-            logger.info(`updating ${key}'s times`)
             this.updateTime(member)
         }
         this.saveMemberData()
@@ -74,7 +72,6 @@ class UserDataContainer {
             const timeDiff = moment.duration(current.diff(member.startTime))
             member.totalTime.add(timeDiff)
             member.startTime = current
-            logger.info(`adding ${timeDiff.asMinutes()}`)
         }
     }
 }
