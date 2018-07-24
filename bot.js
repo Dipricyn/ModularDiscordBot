@@ -6,10 +6,11 @@ const UserData = require('./userdata.js');
 const UserDataContainer = require('./userdatacontainer.js');
 const moment = require('moment');
 const fs = require('fs');
+const util = require('util');
 
 const dataDir = 'data/'
 const memberDataFile = `${dataDir}memberdata.json`
-
+var client
 
 function scanPresences() {
     if(client.guilds.size===0){
@@ -65,43 +66,78 @@ function handlePresenceUpdate(user, oldStatus, newStatus) {
     }
 }
 
+function login() {
+    logger.info("logging in...")
+    client = null
+    client = new Discord.Client()
+    client.login(auth.token)
+    addEventHandlers(client)
+}
+
+function handleClientError(err) {
+    switch(err.code){
+    case 'ECONNRESET':
+        logger.warning("client lost connection") 
+        client && client.destroy()
+        client = null
+        setTimeout(()=>{
+            login()
+        },30000)
+        break
+    default:
+        logger.error(`client error: ${util.inspect(err,false,null)}`) 
+    } 
+}
+
+function addEventHandlers(client) {
+    client.on('message', message => {
+        // Our bot needs to know if it will execute a command
+        // It will listen for messages that will start with `!`
+        if (message.content.substring(0, 1) == '!') {
+            var args = message.content.substring(1).split(' ')
+            var cmd = args[0]
+    
+            args = args.splice(1)
+            switch (cmd) {
+                // !ping
+            case 'ping':
+                message.channel.send('pong')
+                break;
+                // !times
+            case 'times':
+                memberDataContainer.updateTimes()
+                printTimes(message.channel)
+                break;
+            }
+        }
+    });
+    
+    client.on('presenceUpdate', (oldMember, newMember) => {
+        handlePresenceUpdate(newMember.user.username, 
+            oldMember.presence.status, 
+            newMember.presence.status)
+    })
+    
+    client.on('ready', () => {
+        logger.info("bot is ready")
+        scanPresences()
+    })
+    
+    client.on('error', handleClientError)
+}
+
 fs.mkdir(dataDir, err => {
     if(err && (err.code !== 'EEXIST')) logger.warn(`failed to create directory ${dataDir}: ${err}`)
 })
 let memberDataContainer = new UserDataContainer(memberDataFile)
 memberDataContainer.loadMemberData()
 
-// Initialize Discord client
-const client = new Discord.Client()
+login()
 
-client.on('message', message => {
-    // Our bot needs to know if it will execute a command
-    // It will listen for messages that will start with `!`
-    if (message.content.substring(0, 1) == '!') {
-        var args = message.content.substring(1).split(' ')
-        var cmd = args[0]
-
-        args = args.splice(1)
-        switch (cmd) {
-            // !ping
-        case 'ping':
-            message.channel.send('pong')
-            break;
-            // !times
-        case 'times':
-            memberDataContainer.updateTimes()
-            printTimes(message.channel)
-            break;
-        }
-    }
-});
-
-client.on('presenceUpdate', (oldMember, newMember) => {
-    handlePresenceUpdate(newMember.user.username, 
-        oldMember.presence.status, 
-        newMember.presence.status)
+process.on('unhandledRejection', err => {
+    logger.error(`unhandledRejection: ${util.inspect(err,false,null)}`)  
 })
 
-client.login(auth.token).then( () => {
-    scanPresences()
+process.on('uncaughtException', err => {
+    logger.error(`uncaughtException: ${util.inspect(err,false,null)}`)  
 })
