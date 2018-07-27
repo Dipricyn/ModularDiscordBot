@@ -1,4 +1,4 @@
-const logger = require('./logger.js');
+const logger = require('./../../logger.js');
 const fs = require('fs');
 const moment = require('moment');
 const UserData = require('./userdata.js')
