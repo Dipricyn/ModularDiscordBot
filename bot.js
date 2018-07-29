@@ -6,41 +6,93 @@ const auth = require('./auth.json');
 const TimeTrackingPlugin = require('./plugins/timeTracking/timetrackingplugin.js')
 
 var client
-var plugins = []
+var plugins = [
+    new TimeTrackingPlugin()
+]
+let suppressReconnectMessages = false
+let reconnectTimerRunning = false
+let pluginsRunning = false
+let disconnected = true
 
 function login() {
     logger.info("logging in...")
     client = null
     client = new Discord.Client()
-    client.login(auth.token)
+    client.login(auth.token).catch(()=>{})
     addEventHandlers()    
 }
 
 function addEventHandlers() {
     client.on('error', handleClientError)
+    client.on('disconnect', handleDisconnect)
+    client.on('resume', ()=>{
+        suppressReconnectMessages = false
+        disconnected = false
+        logger.info("websocket has resumed")
+        startPlugins()
+    })
     client.on('ready', () => {
+        suppressReconnectMessages = false
+        disconnected = false
         logger.info("bot is ready")
+        startPlugins()
     })
 }
 
 function startPlugins() {
-    const timeTracking = new TimeTrackingPlugin()
-    timeTracking.startPlugin(client)
-    plugins.push(timeTracking)
+    if(!pluginsRunning) {
+        for(let plugin of plugins) {
+            plugin.startPlugin(client)
+        }
+        pluginsRunning = true
+    }
 }
 
-function handleClientError(err) {
-    switch(err.code){
+function stopPlugins() {
+    if(pluginsRunning) {
+        for(let plugin of plugins) {
+            plugin.stopPlugin()
+        }
+        pluginsRunning = false
+    }
+}
+
+function handleDisconnect(errEvent) {
+    disconnected = true
+    client && client.destroy()
+    client = null
+    logger.warn(`websocket disconnected: ${util.inspect(errEvent.error)}`) 
+    if(!reconnectTimerRunning && disconnected) {
+        scheduleManualReconnect()
+    }
+}
+
+function scheduleManualReconnect() {
+    client && client.destroy()
+    client = null
+    logger.info('fallback reconnect timer started')
+    setTimeout(()=>{
+        reconnectTimerRunning = false
+        login()
+    }, 30000)
+    reconnectTimerRunning = true
+}
+
+function handleClientError(errEvent) {
+    stopPlugins()
+    switch(errEvent.error.code){
     case 'ECONNRESET':
-        logger.warning("client lost connection") 
-        client && client.destroy()
-        client = null
-        setTimeout(()=>{
-            login()
-        },30000)
+    case 'ENOTFOUND':
+        if(suppressReconnectMessages === false) {
+            suppressReconnectMessages = true
+            logger.warn(`client lost connection: ${util.inspect(errEvent.error)}`) 
+        }
+        if(!reconnectTimerRunning && disconnected) {
+            scheduleManualReconnect()
+        }
         break
     default:
-        logger.error(`client error: ${util.inspect(err,false,null)}`) 
+        logger.error(`client error: ${util.inspect(errEvent.error)}`) 
     } 
 }
 
@@ -53,4 +105,3 @@ process.on('uncaughtException', err => {
 })
 
 login()
-startPlugins()

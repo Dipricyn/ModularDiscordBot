@@ -13,7 +13,7 @@ module.exports = class TimeTrackingPlugin {
     constructor() {
         this.handleMessage = this.handleMessage.bind(this)
         this.handlePresenceUpdate = this.handlePresenceUpdate.bind(this)
-        this.handleReady = this.handleReady.bind(this)
+        this.handleGlobalError = this.handleGlobalError.bind(this)
     }
 
     startPlugin(client) {
@@ -22,14 +22,19 @@ module.exports = class TimeTrackingPlugin {
             if(err && (err.code !== 'EEXIST')) logger.warn(`failed to create directory ${dataDir}: ${err}`)
         })
         this.memberDataContainer = new UserDataContainer(memberDataFile)
-        this.memberDataContainer.loadMemberData()
         this.addEventHandlers(client)
+        this.memberDataContainer.loadMemberData().then(()=>{
+            this.scanPresences(this.client)
+        })
     }
     
     stopPlugin() {
+        this.memberDataContainer.updateTimes()
         this.client.removeListener('message', this.handleMessage)
         this.client.removeListener('presenceUpdate', this.handlePresenceUpdate)
-        this.client.removeListener('ready', this.handleReady)
+        process.removeListener('uncaughtException', this.handleGlobalError)
+        process.removeListener('unhandledRejection', this.handleGlobalError)
+        this.client = null
     }
 
     scanPresences(client) {
@@ -47,14 +52,20 @@ module.exports = class TimeTrackingPlugin {
                 }
                 this.memberDataContainer.data[username].isOffline = false
                 this.memberDataContainer.data[username].startTime = moment()
+                logger.debug(`${username} was already online`)
             }
         }
     }
 
     printTimes(channel) {
-        let msg = ""
+        let sorted = []
         for (const [key, value] of Object.entries(this.memberDataContainer.data)) {
-            msg += `${key}: ${value.totalTime.humanize()}.\n`
+            sorted.push([key,value.totalTime.asHours()])
+        }
+        sorted.sort((a,b)=> b[1]-a[1])
+        let msg = ""
+        for (const [key, value] of sorted) {
+            msg += `${key}: ${value.toFixed(2)} hours.\n`
         }
         if (!msg || msg === "") {
             msg = "No one listed."
@@ -103,13 +114,14 @@ module.exports = class TimeTrackingPlugin {
         }
     }
 
-    handleReady() {
-        this.scanPresences(this.client)
+    handleGlobalError() {
+        this.memberDataContainer.updateTimes()
     }
 
     addEventHandlers(client) {
         client.on('message', this.handleMessage)
         client.on('presenceUpdate', this.handlePresenceUpdate)
-        client.on('ready', this.handleReady)
+        process.on('uncaughtException', this.handleGlobalError)
+        process.on('unhandledRejection', this.handleGlobalError)
     }
 }
