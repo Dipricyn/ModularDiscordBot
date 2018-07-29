@@ -1,4 +1,4 @@
-const logger = require('./logger.js');
+const logger = require('./../../logger.js');
 const fs = require('fs');
 const moment = require('moment');
 const UserData = require('./userdata.js')
@@ -12,31 +12,34 @@ class UserDataContainer {
 
     loadMemberData() {
         let that = this
-        try {
-            fs.readFile(this.memberDataFilePath, function(err,content) {
-                if(err) {
-                    if(err && (err.code !== "ENOENT")) {
-                        logger.error(`${err} occured while loading  member data.`)    
-                    } 
-                } else {
-                    try {
-                        const jsonData = JSON.parse(content)
-                        for (let [username, data] of Object.entries(jsonData)) {
-                            const user = new UserData()
-                            user.totalTime = moment.duration(data["totalTime"])
-                            user.isOffline = true
-                            that.data[username] = user
+        return new Promise((resolve)=>{
+            try {
+                fs.readFile(this.memberDataFilePath, function(err,content) {
+                    if(err) {
+                        if(err && (err.code !== "ENOENT")) {
+                            logger.error(`${err} occured while loading  member data.`)    
+                        } 
+                    } else {
+                        try {
+                            const jsonData = JSON.parse(content)
+                            for (let [username, data] of Object.entries(jsonData)) {
+                                const user = new UserData()
+                                user.totalTime = moment.duration(data["totalTime"])
+                                user.isOffline = true
+                                that.data[username] = user
+                            }
+                            resolve()
+                        } catch (err) {
+                            logger.error(`${err} occured while parsing member data:\n${content}`)        
                         }
-                    } catch (err) {
-                        logger.error(`${err} occured while parsing member data:\n${content}`)        
                     }
-                }
-            })
-        } catch (err) {
-            if(err && (err.code !== "ENOENT")) {
-                logger.error(`${err} occured while loading  member data.`)    
-            }  
-        }
+                })
+            } catch (err) {
+                if(err && (err.code !== "ENOENT")) {
+                    logger.error(`${err} occured while loading  member data.`)    
+                }  
+            }
+        })
     }
     
     saveMemberData() {

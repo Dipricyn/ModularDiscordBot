@@ -14,8 +14,8 @@ const logger = createLogger({
       // - Write to all logs with level `info` and below to `combined.log` 
       // - Write all logs error (and below) to `error.log`.
       //
-      new transports.File({ filename: `${logDir}error.log`, level: 'error', timestamp: true }),
-      new transports.File({ filename: `${logDir}combined.log`, timestamp: true })
+      new transports.File({ filename: `${logDir}error.log`, level: 'error'}),
+      new transports.File({ filename: `${logDir}combined.log`})
     ]
   });
   
@@ -25,7 +25,8 @@ const logger = createLogger({
   // 
   if (process.env.NODE_ENV !== 'production') {
     logger.add(new transports.Console({
-      format: format.simple()
+      format: format.simple(),
+      level: 'debug'
     }));
   }
 
