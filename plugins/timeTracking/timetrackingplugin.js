@@ -46,7 +46,7 @@ module.exports = class TimeTrackingPlugin {
         for(let newMember of values) {
             const username = newMember.user.username
             const status = newMember.presence.status        
-            if(status!=="offline") {
+            if(this.isOnline(status)) {
                 if(!(username in this.memberDataContainer.data)) {
                     this.memberDataContainer.data[username] = new UserData()
                 }
@@ -77,7 +77,7 @@ module.exports = class TimeTrackingPlugin {
         const user = newMember.user.username
         const oldStatus = oldMember.presence.status
         const newStatus = newMember.presence.status
-        if (newStatus === 'offline' && oldStatus !== 'offline') { //someone went offline
+        if (!this.isOnline(newStatus) && this.isOnline(oldStatus)) { //someone went offline
             if (user in this.memberDataContainer.data) {
                 let data = this.memberDataContainer.data[user]
                 const timeDiff = moment.duration(moment().diff(data.startTime))
@@ -87,7 +87,7 @@ module.exports = class TimeTrackingPlugin {
             } else {
                 logger.warn(`untracked user ${user} went offline: dropping time`)
             }
-        } else if (newStatus !== 'offline' && oldStatus === 'offline') { //someone went online
+        } else if (this.isOnline(newStatus) && !this.isOnline(oldStatus)) { //someone went online
             if (user in this.memberDataContainer.data) {
                 let data = this.memberDataContainer.data[user]
                 data.isOffline = false
@@ -123,5 +123,14 @@ module.exports = class TimeTrackingPlugin {
         client.on('presenceUpdate', this.handlePresenceUpdate)
         process.on('uncaughtException', this.handleGlobalError)
         process.on('unhandledRejection', this.handleGlobalError)
+    }
+
+    isOnline(status) {
+        switch(status) {
+            case "online": return true
+            case "idle": return false
+            case "dnd": return false
+            case "offline": return false
+        }
     }
 }
