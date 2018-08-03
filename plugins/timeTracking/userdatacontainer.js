@@ -16,9 +16,9 @@ class UserDataContainer {
             try {
                 fs.readFile(this.memberDataFilePath, function(err,content) {
                     if(err) {
-                        if(err && (err.code !== "ENOENT")) {
-                            logger.error(`${err} occured while loading  member data.`)    
-                        } 
+                        if(err.code !== "ENOENT") {
+                            logger.error(`${err} occured while loading  member data.`)
+                        }    
                     } else {
                         try {
                             const jsonData = JSON.parse(content)
@@ -28,16 +28,17 @@ class UserDataContainer {
                                 user.isOffline = true
                                 that.data[username] = user
                             }
-                            resolve()
                         } catch (err) {
-                            logger.error(`${err} occured while parsing member data:\n${content}`)        
+                            logger.error(`${err} occured while parsing member data:\n${content}`)
                         }
                     }
+                    resolve()
                 })
             } catch (err) {
                 if(err && (err.code !== "ENOENT")) {
                     logger.error(`${err} occured while loading  member data.`)    
                 }  
+                resolve()
             }
         })
     }

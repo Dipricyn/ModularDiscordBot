@@ -64,8 +64,10 @@ module.exports = class TimeTrackingPlugin {
         }
         sorted.sort((a,b)=> b[1]-a[1])
         let msg = ""
+        let i=1
         for (const [key, value] of sorted) {
-            msg += `${key}: ${value.toFixed(2)} hours.\n`
+            msg += `${i}. ${key}: ${value.toFixed(2)} hours.\n`
+            i++
         }
         if (!msg || msg === "") {
             msg = "No one listed."
