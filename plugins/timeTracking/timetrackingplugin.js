@@ -1,39 +1,32 @@
 const moment = require('moment');
+const Plugin = require('./../../plugin.js');
 const UserData = require('./userdata.js');
 const UserDataContainer = require('./userdatacontainer.js');
 const logger = require('./../../logger.js');
 const fs = require('fs');
 
-const dataDir = 'data/'
-const memberDataFile = `${dataDir}memberdata.json`
-
-
-module.exports = class TimeTrackingPlugin {
+module.exports = class TimeTrackingPlugin extends Plugin {
 
     constructor() {
+        super("timetracking")
         this.handleMessage = this.handleMessage.bind(this)
         this.handlePresenceUpdate = this.handlePresenceUpdate.bind(this)
         this.handleGlobalError = this.handleGlobalError.bind(this)
+        this.memberDataFile = `${this.dataDirLocation()}/memberdata.json`
     }
 
     startPlugin(client) {
         this.client = client
-        fs.mkdir(dataDir, err => {
-            if(err && (err.code !== 'EEXIST')) logger.warn(`failed to create directory ${dataDir}: ${err}`)
-        })
-        this.memberDataContainer = new UserDataContainer(memberDataFile)
+        this.memberDataContainer = new UserDataContainer(this.memberDataFile)
         this.addEventHandlers(client)
         this.memberDataContainer.loadMemberData().then(()=>{
             this.scanPresences(this.client)
         })
     }
     
-    stopPlugin() {
+    stopPlugin(client) {
         this.memberDataContainer.updateTimes()
-        this.client.removeListener('message', this.handleMessage)
-        this.client.removeListener('presenceUpdate', this.handlePresenceUpdate)
-        process.removeListener('uncaughtException', this.handleGlobalError)
-        process.removeListener('unhandledRejection', this.handleGlobalError)
+        this.removeEventHandlers(this.client)
         this.client = null
     }
 
@@ -44,9 +37,9 @@ module.exports = class TimeTrackingPlugin {
         const guild = client.guilds.values().next().value
         const values = guild.members.values()
         for(let newMember of values) {
-            const username = newMember.user.username
-            const status = newMember.presence.status        
-            if(this.isOnline(status)) {
+            const username = newMember.user.username  
+            const status = newMember.presence.status     
+            if(this.shouldTrack(newMember.user) && this.isOnline(status)) {
                 if(!(username in this.memberDataContainer.data)) {
                     this.memberDataContainer.data[username] = new UserData()
                 }
@@ -66,6 +59,7 @@ module.exports = class TimeTrackingPlugin {
         let msg = ""
         let i=1
         for (const [key, value] of sorted) {
+            if(key===this.client.user.username) continue
             msg += `${i}. ${key}: ${value.toFixed(2)} hours.\n`
             i++
         }
@@ -79,6 +73,9 @@ module.exports = class TimeTrackingPlugin {
         const user = newMember.user.username
         const oldStatus = oldMember.presence.status
         const newStatus = newMember.presence.status
+        if (!this.shouldTrack(newMember.user)) {
+            return
+        }
         if (!this.isOnline(newStatus) && this.isOnline(oldStatus)) { //someone went offline
             if (user in this.memberDataContainer.data) {
                 let data = this.memberDataContainer.data[user]
@@ -104,9 +101,7 @@ module.exports = class TimeTrackingPlugin {
 
     handleMessage(message) {
         if (message.content.substring(0, 1) == '!') {
-            var args = message.content.substring(1).split(' ')
-            var cmd = args[0]
-            args = args.splice(1)
+            const cmd = message.content.substring(1).split(' ')[0]
             switch (cmd) {
             case 'times': // !times
                 this.memberDataContainer.updateTimes()
@@ -127,6 +122,13 @@ module.exports = class TimeTrackingPlugin {
         process.on('unhandledRejection', this.handleGlobalError)
     }
 
+    removeEventHandlers(client) {
+        client.removeListener('message', this.handleMessage)
+        client.removeListener('presenceUpdate', this.handlePresenceUpdate)
+        process.removeListener('uncaughtException', this.handleGlobalError)
+        process.removeListener('unhandledRejection', this.handleGlobalError)
+    }
+
     isOnline(status) {
         switch(status) {
             case "online": return true
@@ -134,5 +136,15 @@ module.exports = class TimeTrackingPlugin {
             case "dnd": return false
             case "offline": return false
         }
+    }
+
+    shouldTrack(user) {
+        if(!user.bot) {
+            return true
+        } else if(user.bot && user.id===this.client.user.id) {
+            return true
+        } else {
+            return false
+        }   
     }
 }

@@ -3,11 +3,15 @@ const util = require('util');
 const Discord = require('discord.js');
 const logger = require('./logger.js');
 const auth = require('./auth.json');
-const TimeTrackingPlugin = require('./plugins/timeTracking/timetrackingplugin.js')
+const TimeTrackingPlugin = require('./plugins/timeTracking/timetrackingplugin.js');
+const CommandHidingPlugin = require('./plugins/commandHiding/commandhidingplugin.js');
+const SoundboardPlugin = require('./plugins/soundboard/soundboardplugin.js');
 
 var client
 var plugins = [
-    new TimeTrackingPlugin()
+    new TimeTrackingPlugin(),
+    new CommandHidingPlugin(),
+    new SoundboardPlugin()
 ]
 let suppressReconnectMessages = false
 let reconnectTimerRunning = false
@@ -42,7 +46,7 @@ function addEventHandlers() {
 function startPlugins() {
     if(!pluginsRunning) {
         for(let plugin of plugins) {
-            plugin.startPlugin(client)
+            plugin._startPluginImpl(client)
         }
         pluginsRunning = true
     }
@@ -51,7 +55,7 @@ function startPlugins() {
 function stopPlugins() {
     if(pluginsRunning) {
         for(let plugin of plugins) {
-            plugin.stopPlugin()
+            plugin._stopPluginImpl(client)
         }
         pluginsRunning = false
     }
