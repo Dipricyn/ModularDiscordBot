@@ -30,6 +30,8 @@ module.exports = class SoundboardPlugin extends Plugin {
             if(sounds.length > 1) {
                 logger.error(`multiple actions for command ${cmd}`)
                 return
+            } else if(sounds.length===0) {
+                return
             }
             const sound = sounds[0]
             const files = sound.files
