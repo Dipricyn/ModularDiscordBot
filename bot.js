@@ -104,4 +104,8 @@ process.on('uncaughtException', err => {
     logger.error(`uncaughtException: ${util.inspect(err,false,null)}`)  
 })
 
+process.on('exit', (code) => {  
+    logger.info(`About to exit with code ${code}`)
+});
+
 login()
