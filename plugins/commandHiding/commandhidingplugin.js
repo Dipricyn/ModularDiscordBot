@@ -18,12 +18,14 @@ module.exports = class CommandHidingPlugin extends Plugin {
 
     handleMessage(message) {
         if (message.content.substring(0, 1) == '!') {
-            if(this.config.delay > 0) {
-                setTimeout(()=>{
+            if(message.deletable){
+                if(this.config.delay > 0) {
+                    setTimeout(()=>{
+                            message.delete()
+                    }, this.config.delay)
+                } else {
                     message.delete()
-                }, this.config.delay)
-            } else {
-                message.delete()
+                }
             }
         }
     }

@@ -40,7 +40,14 @@ module.exports = class SoundboardPlugin extends Plugin {
                 index = Math.floor(Math.random() * files.length)
             } while(sound.last === index);
             sound.last = index
-            const channel = message.member.voiceChannel
+            const sender = message.member
+            if (!sender) {
+                message.author.send("Don't send this command to me, but send it in a guild channel instead!").catch(err=>{
+                    logger.warning(`Couldn't send dm: ${err}`)
+                })
+                return
+            }
+            const channel = sender.voiceChannel
             if(channel) {
                 this.playSound(`${this.dataDirLocation()}/${files[index]}`, channel)
             }
@@ -76,7 +83,7 @@ module.exports = class SoundboardPlugin extends Plugin {
                     channel.leave()
                     this.isReady = true
                 })
-            }).catch(err => logger.error(`${err} occured while playing sound.`))
+            }).catch(err => logger.error(`${err} occured while playing sound.`)) 
         }
     }
 }
