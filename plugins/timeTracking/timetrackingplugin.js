@@ -80,6 +80,7 @@ module.exports = class TimeTrackingPlugin extends Plugin {
             if (user in this.memberDataContainer.data) {
                 let data = this.memberDataContainer.data[user]
                 const timeDiff = moment.duration(moment().diff(data.startTime))
+                logger.debug(`${user} went ${newStatus}: added ${timeDiff.asHours()} to ${data.totalTime.asHours()}`)
                 data.totalTime.add(timeDiff)
                 data.isOffline = true
                 this.memberDataContainer.saveMemberData()
@@ -95,6 +96,7 @@ module.exports = class TimeTrackingPlugin extends Plugin {
                 let userdata = new UserData()
                 this.memberDataContainer.data[user] = userdata
             }
+            logger.debug(`${user} went ${newStatus}: totalTime ${this.memberDataContainer.data[user].totalTime.asHours()}`)
             this.memberDataContainer.saveMemberData()
         }
     }

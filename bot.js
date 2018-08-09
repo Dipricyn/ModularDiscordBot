@@ -28,7 +28,9 @@ function login() {
 
 function addEventHandlers() {
     client.on('error', handleClientError)
+    client.on('warn', info => logger.warn(info))
     client.on('disconnect', handleDisconnect)
+    client.on('reconnecting', () => logger.info('bot reconnecting...'))
     client.on('resume', ()=>{
         suppressReconnectMessages = false
         disconnected = false
@@ -101,15 +103,15 @@ function handleClientError(errEvent) {
 }
 
 process.on('unhandledRejection', err => {
-    logger.error(`unhandledRejection: ${util.inspect(err,false,null)}`)  
+    logger.error(`unhandled rejection: ${err.stack}`);
 })
 
 process.on('uncaughtException', err => {
-    logger.error(`uncaughtException: ${util.inspect(err,false,null)}`)  
+    logger.error(`uncaught exception: ${err.stack}`);
 })
 
-process.on('exit', (code) => {  
-    logger.info(`About to exit with code ${code}`)
+process.on('exit', code => {  
+    logger.info(`about to exit with code ${code}`)
 });
 
 login()
