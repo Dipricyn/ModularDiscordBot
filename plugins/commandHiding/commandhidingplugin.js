@@ -13,6 +13,8 @@ module.exports = class CommandHidingPlugin extends Plugin {
     }
 
     stopPlugin(client) {
+        this.timer && clearTimeout(this.timer)
+        this.timer = null
         this.removeEventHandlers(client)
     }
 
@@ -20,7 +22,7 @@ module.exports = class CommandHidingPlugin extends Plugin {
         if (message.content.substring(0, 1) == '!') {
             if(message.deletable){
                 if(this.config.delay > 0) {
-                    setTimeout(()=>{
+                    this.timer = setTimeout(()=>{
                             message.delete()
                     }, this.config.delay)
                 } else {
