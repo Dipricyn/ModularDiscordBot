@@ -102,6 +102,15 @@ function handleClientError(errEvent) {
     } 
 }
 
+function handleExit() {
+    logger.info("process exit")
+    stopPlugins()
+}
+
+function handleTermination() {
+    process.exit(-1)
+}
+
 process.on('unhandledRejection', err => {
     logger.error(`unhandled rejection: ${err.stack}`);
 })
@@ -110,8 +119,10 @@ process.on('uncaughtException', err => {
     logger.error(`uncaught exception: ${err.stack}`);
 })
 
-process.on('exit', code => {  
-    logger.info(`about to exit with code ${code}`)
-});
+process.on('exit', handleExit)
+process.on('SIGINT', handleTermination)
+process.on('SIGUSR1', handleTermination)
+process.on('SIGUSR2', handleTermination)
+process.on('SIGTERM', handleTermination)
 
 login()

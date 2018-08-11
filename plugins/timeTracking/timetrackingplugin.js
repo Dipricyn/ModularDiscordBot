@@ -25,7 +25,7 @@ module.exports = class TimeTrackingPlugin extends Plugin {
     }
     
     stopPlugin(client) {
-        this.memberDataContainer.updateTimes()
+        this.memberDataContainer.updateTimes('sync')
         this.removeEventHandlers(this.client)
         this.client = null
     }
