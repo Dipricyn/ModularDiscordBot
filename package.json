@@ -14,7 +14,10 @@
   "license": "ISC",
   "dependencies": {
     "discord.js": "^11.3.2",
+    "ffmpeg": "0.0.4",
+    "mkdirp": "^0.5.1",
     "moment": "^2.22.2",
+    "node-opus": "^0.3.0",
     "winston": "^3.0.0"
   },
   "repository": {

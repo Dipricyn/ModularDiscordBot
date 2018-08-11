@@ -4,7 +4,6 @@ const logDir = 'data/'
 
 // Configure logger settings
 const logger = createLogger({
-    level: 'info',
     format: format.combine(
       format.timestamp(),
       format.json()
@@ -15,7 +14,8 @@ const logger = createLogger({
       // - Write all logs error (and below) to `error.log`.
       //
       new transports.File({ filename: `${logDir}error.log`, level: 'error'}),
-      new transports.File({ filename: `${logDir}combined.log`})
+      new transports.File({ filename: `${logDir}info.log`, level: 'info'}),
+      new transports.File({ filename: `${logDir}debug.log`, level: 'debug'})
     ]
   });
   

@@ -3,12 +3,25 @@ const util = require('util');
 const Discord = require('discord.js');
 const logger = require('./logger.js');
 const auth = require('./auth.json');
-const TimeTrackingPlugin = require('./plugins/timeTracking/timetrackingplugin.js')
+const TimeTrackingPlugin = require('./plugins/timeTracking/timetrackingplugin.js');
+const CommandHidingPlugin = require('./plugins/commandHiding/commandhidingplugin.js');
+const SoundboardPlugin = require('./plugins/soundboard/soundboardplugin.js');
+const NoticeMePlugin = require('./plugins/soundboard/noticemeplugin/noticemeplugin.js')
 
 var client
+
+const timeTrackingPlugin = new TimeTrackingPlugin()
+const commandHidingPlugin = new CommandHidingPlugin()
+const soundboardPlugin = new SoundboardPlugin()
+const noticeMePlugin = new NoticeMePlugin(soundboardPlugin)
+
 var plugins = [
-    new TimeTrackingPlugin()
+    timeTrackingPlugin,
+    commandHidingPlugin,
+    soundboardPlugin,
+    noticeMePlugin
 ]
+
 let suppressReconnectMessages = false
 let reconnectTimerRunning = false
 let pluginsRunning = false
@@ -24,7 +37,9 @@ function login() {
 
 function addEventHandlers() {
     client.on('error', handleClientError)
+    client.on('warn', info => logger.warn(info))
     client.on('disconnect', handleDisconnect)
+    client.on('reconnecting', () => logger.info('bot reconnecting...'))
     client.on('resume', ()=>{
         suppressReconnectMessages = false
         disconnected = false
@@ -42,7 +57,7 @@ function addEventHandlers() {
 function startPlugins() {
     if(!pluginsRunning) {
         for(let plugin of plugins) {
-            plugin.startPlugin(client)
+            plugin._startPluginImpl(client)
         }
         pluginsRunning = true
     }
@@ -51,7 +66,7 @@ function startPlugins() {
 function stopPlugins() {
     if(pluginsRunning) {
         for(let plugin of plugins) {
-            plugin.stopPlugin()
+            plugin._stopPluginImpl(client)
         }
         pluginsRunning = false
     }
@@ -96,16 +111,27 @@ function handleClientError(errEvent) {
     } 
 }
 
+function handleExit() {
+    logger.info("process exit")
+    stopPlugins()
+}
+
+function handleTermination() {
+    process.exit(-1)
+}
+
 process.on('unhandledRejection', err => {
-    logger.error(`unhandledRejection: ${util.inspect(err,false,null)}`)  
+    logger.error(`unhandled rejection: ${err.stack}`);
 })
 
 process.on('uncaughtException', err => {
-    logger.error(`uncaughtException: ${util.inspect(err,false,null)}`)  
+    logger.error(`uncaught exception: ${err.stack}`);
 })
 
-process.on('exit', (code) => {  
-    logger.info(`About to exit with code ${code}`)
-});
+process.on('exit', handleExit)
+process.on('SIGINT', handleTermination)
+process.on('SIGUSR1', handleTermination)
+process.on('SIGUSR2', handleTermination)
+process.on('SIGTERM', handleTermination)
 
 login()

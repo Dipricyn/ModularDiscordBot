@@ -43,7 +43,7 @@ class UserDataContainer {
         })
     }
     
-    saveMemberData() {
+    saveMemberData(mode='async') {
         let data = this.data
         try {
             const jsonStr = JSON.stringify(data, (key, value) => {
@@ -53,21 +53,27 @@ class UserDataContainer {
                 }
                 return value
             })
-            fs.writeFile (this.memberDataFilePath, jsonStr, function(err) {
-                if (err) {
-                    logger.error(`${err} occured while saving member data.`)
-                }
-            })
+            if(mode==='sync') {
+                fs.writeFileSync(this.memberDataFilePath, jsonStr)
+            } else if(mode==='async') {
+                fs.writeFile(this.memberDataFilePath, jsonStr, function(err) {
+                    if (err) {
+                        logger.error(`${err} occured while saving member data.`)
+                    }
+                })
+            } else {
+                throw Error(`unknown saveMemberData parameter mode ${mode}`)
+            }
         } catch (err) {
-            logger.error(`${err} occured while loading member data.`)        
+            logger.error(`${err} occured while saving member data.`)        
         }
     }
     
-    updateTimes() {
+    updateTimes(mode='async') {
         for (const [key, member] of Object.entries(this.data)) {
             this.updateTime(member)
         }
-        this.saveMemberData()
+        this.saveMemberData(mode)
     }
 
     updateTime(member) {
