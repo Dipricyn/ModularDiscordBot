@@ -8,13 +8,14 @@ const botutil = require('./../../botutil.js');
  * The config file has to be in the form:
  *  {
  *      "sounds": [
- *          "command": "mrgl",          //command to type
- *          "files":                    //files to play for command
- *          [
- *              "sounds/murloc0.mp3",
- *              "sounds/murloc1.mp3"
- *          ],
- *          "noticeMeTimer": 3600000    //time in ms for the bot to randomly play the sound
+ *          {
+ *              "command": "mrgl",          //command to type
+ *              "files":                    //files to play for command
+ *              [
+ *                  "sounds/murloc0.mp3",
+ *                  "sounds/murloc1.mp3"
+ *              ]
+ *          }
  *      ]
  *  }
  */
@@ -23,8 +24,6 @@ module.exports = class SoundboardPlugin extends Plugin {
     constructor() {
         super("soundboard")
         this.handleMessage = this.handleMessage.bind(this)
-        this.onNoticeMe = this.onNoticeMe.bind(this)
-        this.timers = new Map()
     }
 
     startPlugin(client) {
@@ -32,15 +31,9 @@ module.exports = class SoundboardPlugin extends Plugin {
         this.addEventHandlers(client)
         this.loadSounds()
         this.isReady = true
-        this.timers.clear()
-        this.setupNoticeMeTimers()
     }
 
     stopPlugin(client) {
-        for(const [command, timer] of this.timers) {
-            clearInterval(timer)
-        }
-        this.timers.clear()
         this.removeEventHandlers(this.client)
         this.isReady = false
         this.client = null
@@ -96,7 +89,7 @@ module.exports = class SoundboardPlugin extends Plugin {
      * Join a channel and play a sound.
      * If the sound object just has one sound file it chooses that one
      * else it chooses one randomly.
-     * @param {*} sound the sound object to choose a sound file from
+     * @param {object} sound the sound object to choose a sound file from
      * @param {VoiceChannel} channel the channel to join
      * @returns a path to the sound file
      */
@@ -123,39 +116,5 @@ module.exports = class SoundboardPlugin extends Plugin {
                 })
             }).catch(err => logger.error(`${err} occured while playing sound.`)) 
         }
-    }
-
-    setupNoticeMeTimers() {
-        const noticeMeSounds = this.config.sounds.filter(sound => sound.noticeMeTimer > 0)
-        for(const sound of noticeMeSounds) {
-            this.scheduleNoticeMeTimer(sound)
-        }
-    }
-    
-    onNoticeMe(sound){
-        const guild = this.client.guilds.first()
-        if(!guild){
-            logger.warn("bot is not in a guild to use for notice me timer!")
-            return
-        }
-        let count = 0
-        let member
-        for(const [key, m] of guild.members) {
-            if(m.voiceChannel !== undefined) {
-                if(Math.random() < 1/++count) {
-                    member = m
-                }
-            }
-        }
-        if(member) {
-            this.playSound(sound, member.voiceChannel)
-        }
-        this.scheduleNoticeMeTimer(sound)
-    }
-
-    scheduleNoticeMeTimer(sound) {
-        const timeout = Math.random()*sound.noticeMeTimer
-        const timer = setTimeout(this.onNoticeMe, timeout, sound)
-        this.timers.set(sound.command, timer)
     }
 }

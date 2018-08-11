@@ -6,13 +6,22 @@ const auth = require('./auth.json');
 const TimeTrackingPlugin = require('./plugins/timeTracking/timetrackingplugin.js');
 const CommandHidingPlugin = require('./plugins/commandHiding/commandhidingplugin.js');
 const SoundboardPlugin = require('./plugins/soundboard/soundboardplugin.js');
+const NoticeMePlugin = require('./plugins/soundboard/noticemeplugin/noticemeplugin.js')
 
 var client
+
+const timeTrackingPlugin = new TimeTrackingPlugin()
+const commandHidingPlugin = new CommandHidingPlugin()
+const soundboardPlugin = new SoundboardPlugin()
+const noticeMePlugin = new NoticeMePlugin(soundboardPlugin)
+
 var plugins = [
-    new TimeTrackingPlugin(),
-    new CommandHidingPlugin(),
-    new SoundboardPlugin()
+    timeTrackingPlugin,
+    commandHidingPlugin,
+    soundboardPlugin,
+    noticeMePlugin
 ]
+
 let suppressReconnectMessages = false
 let reconnectTimerRunning = false
 let pluginsRunning = false

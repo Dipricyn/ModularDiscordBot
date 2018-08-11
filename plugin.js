@@ -35,7 +35,7 @@ module.exports = class Plugin {
 
     /**
      * Get the configuration file path for this plugin.
-     * @returns a relative path to the configuration file
+     * @returns {string} a relative path to the configuration file
      */
     configFileLocation() {
         const configLocation = `./config/${this.identifier}_config.json`
@@ -45,7 +45,7 @@ module.exports = class Plugin {
 
     /**
      * Get the data directory for this plugin.
-     * @returns a relative path without a trailing slash
+     * @returns {string} a relative path without a trailing slash
      */
     dataDirLocation() {
         const dataLocation = `./data/${this.identifier}`
@@ -54,16 +54,21 @@ module.exports = class Plugin {
 
     /**
      * Called to specify the default configuration parameters.
-     * @returns a object containing the default configuration parameters.
+     * The config object will not be loaded from the file if the default config returns null.
+     * @returns {object} a object containing the default configuration parameters or 
+     *          null if a config file is not needed
      */
     defaultConfig() {
-        return {}
+        return null
     }
 
     _startPluginImpl(client) {
         mkdirp.sync(this.dataDirLocation())
-        botutil.writeJSONObjectSyncIfNotExists(this.configFileLocation(), this.defaultConfig())
-        this.config = botutil.loadJSONSyncIfExists(this.configFileLocation())
+        const config = this.defaultConfig()
+        if(config) {
+            botutil.writeJSONObjectSyncIfNotExists(this.configFileLocation(), config)
+            this.config = botutil.loadJSONSyncIfExists(this.configFileLocation())
+        }
         this.startPlugin(client)
     }
 
