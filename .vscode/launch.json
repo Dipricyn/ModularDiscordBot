@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Launch Program",
             "runtimeArgs": ["--harmony"],
-            "program": "${workspaceFolder}\\bot.js",
+            "program": "${workspaceFolder}\\index.js",
             "outputCapture": "std"
         }
     ]

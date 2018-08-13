@@ -20,26 +20,24 @@ const botutil = require('./../../../botutil.js');
 module.exports = class NoticeMePlugin extends Plugin {
 
     constructor(soundboardPlugin) {
-        super("soundboard")
+        super("noticeme")
         this.soundboardPlugin = soundboardPlugin
         this.onNoticeMe = this.onNoticeMe.bind(this)
         this.timers = new Map()
     }
 
-    startPlugin(client) {
-        this.client = client
+    startPlugin() {
         this.isReady = true
         this.timers.clear()
         this.setupNoticeMeTimers()
     }
 
-    stopPlugin(client) {
+    stopPlugin() {
         for(const [command, timer] of this.timers) {
-            clearInterval(timer)
+            clearTimeout(timer)
         }
         this.timers.clear()
         this.isReady = false
-        this.client = null
     }
 
     defaultConfig() {
@@ -55,10 +53,6 @@ module.exports = class NoticeMePlugin extends Plugin {
     
     onNoticeMe(sound){
         const guild = this.client.guilds.first()
-        if(!guild){
-            logger.warn("bot is not in a guild to use for notice me timer!")
-            return
-        }
         let count = 0
         let member
         for(const [key, m] of guild.members) {

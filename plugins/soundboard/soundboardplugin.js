@@ -26,20 +26,19 @@ module.exports = class SoundboardPlugin extends Plugin {
         this.handleMessage = this.handleMessage.bind(this)
     }
 
-    startPlugin(client) {
-        this.client = client
-        this.addEventHandlers(client)
+    startPlugin() {
+        this.addEventHandlers(this.client)
         this.loadSounds()
         this.isReady = true
     }
 
-    stopPlugin(client) {
+    stopPlugin() {
         this.removeEventHandlers(this.client)
         this.isReady = false
-        this.client = null
     }
 
     handleMessage(message) {
+        if(message.author.bot) return
         if (message.content.substring(0, 1) == '!') {
             const cmd = message.content.substring(1).split(' ')[0]
             const sounds = this.config.sounds.filter(sound => sound.command == cmd)

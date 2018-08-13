@@ -2,7 +2,7 @@
   "name": "on-time-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "bot.js",
+  "main": "index.js",
   "scripts": {
     "start": "node --harmony bot.js"
   },

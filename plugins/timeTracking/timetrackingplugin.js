@@ -3,31 +3,35 @@ const Plugin = require('./../../plugin.js');
 const UserData = require('./userdata.js');
 const UserDataContainer = require('./userdatacontainer.js');
 const logger = require('./../../logger.js');
+const Command = require('./../../command.js');
 const fs = require('fs');
 
 module.exports = class TimeTrackingPlugin extends Plugin {
 
     constructor() {
         super("timetracking")
-        this.handleMessage = this.handleMessage.bind(this)
         this.handlePresenceUpdate = this.handlePresenceUpdate.bind(this)
         this.handleGlobalError = this.handleGlobalError.bind(this)
+        this.handleTimesCommand = this.handleTimesCommand.bind(this)
         this.memberDataFile = `${this.dataDirLocation()}/memberdata.json`
+
+        this.commandContainer.add(new Command()
+            .setIdentifier("times")
+            .setHandler(this.handleTimesCommand)
+        )
     }
 
-    startPlugin(client) {
-        this.client = client
+    startPlugin() {
         this.memberDataContainer = new UserDataContainer(this.memberDataFile)
-        this.addEventHandlers(client)
+        this.addEventHandlers(this.client)
         this.memberDataContainer.loadMemberData().then(()=>{
             this.scanPresences(this.client)
         })
     }
     
-    stopPlugin(client) {
+    stopPlugin() {
         this.memberDataContainer.updateTimes('sync')
         this.removeEventHandlers(this.client)
-        this.client = null
     }
 
     scanPresences(client) {
@@ -69,6 +73,11 @@ module.exports = class TimeTrackingPlugin extends Plugin {
         channel.send(msg)
     }
 
+    handleTimesCommand(args, channel) {
+        this.memberDataContainer.updateTimes()
+        this.printTimes(channel)
+    }
+
     handlePresenceUpdate(oldMember, newMember) {
         const user = newMember.user.username
         const oldStatus = oldMember.presence.status
@@ -101,31 +110,17 @@ module.exports = class TimeTrackingPlugin extends Plugin {
         }
     }
 
-    handleMessage(message) {
-        if (message.content.substring(0, 1) == '!') {
-            const cmd = message.content.substring(1).split(' ')[0]
-            switch (cmd) {
-            case 'times': // !times
-                this.memberDataContainer.updateTimes()
-                this.printTimes(message.channel)
-                break;
-            }
-        }
-    }
-
     handleGlobalError() {
         this.memberDataContainer.updateTimes()
     }
 
     addEventHandlers(client) {
-        client.on('message', this.handleMessage)
         client.on('presenceUpdate', this.handlePresenceUpdate)
         process.on('uncaughtException', this.handleGlobalError)
         process.on('unhandledRejection', this.handleGlobalError)
     }
 
     removeEventHandlers(client) {
-        client.removeListener('message', this.handleMessage)
         client.removeListener('presenceUpdate', this.handlePresenceUpdate)
         process.removeListener('uncaughtException', this.handleGlobalError)
         process.removeListener('unhandledRejection', this.handleGlobalError)
