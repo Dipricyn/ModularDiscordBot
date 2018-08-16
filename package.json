@@ -1,10 +1,10 @@
 {
-  "name": "on-time-bot",
+  "name": "modulardiscordbot",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node --harmony bot.js",
+    "start": "node --harmony index.js",
     "generate-docs": "node_modules/.bin/jsdoc README.md -c jsdoc.json -r src -d docs"
   },
   "keywords": [
