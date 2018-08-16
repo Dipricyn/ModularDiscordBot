@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: plugincontainer.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: plugincontainer.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const logger = require('./logger.js');
+const fs = require('fs');
+
+/**
+ * Datastructure to facilitate managing multiple plugins. 
+ */
+class PluginContainer extends Map {
+
+    /**
+     * @param {String} stateFile location where the state file should be saved
+     */
+    constructor(stateFile) {
+        super()
+        this.stateFile = stateFile
+        /**
+         * object containing [String, Boolean] pairs to store which plugins are persistently enabled
+         * @type {object.&lt;String, Boolean>}
+         */
+        this.persistentStates = {}
+        this.loadPluginStates()
+        this._client = null
+    }
+
+    /**
+     * Add a plugin to the container.
+     * @param {Plugin} plugin the plugin to add
+     */
+    add(plugin) {
+        this.set(plugin.identifier, plugin)
+    }
+    
+    loadPluginStates() {
+        return new Promise((resolve)=>{
+            try {
+                fs.readFile(this.stateFile, (err, content) => {
+                    if(err) {
+                        if(err.code === "ENOENT") {
+                        } else {
+                            throw err                            
+                        }
+                    } else {
+                        this.persistentStates = JSON.parse(content)
+                    }
+                    resolve()
+                })
+            } catch(err) {
+                logger.error(`${err} occured while loading plugin states.`)
+                resolve()
+            }
+        })
+    }
+
+    savePluginStates() {
+        const jsonStr = JSON.stringify(this.persistentStates)
+        fs.writeFile(this.stateFile, jsonStr, err => {
+            if (err) {
+                logger.error(`${err} occured while saving plugin states.`)
+            }
+        })
+    }
+
+    /**
+     * Start a plugin by a given plugin identifier.
+     * @param {String} identifier the plugin's identifier
+     * @param {Boolean} persistent true if the plugin should run after a bot restart
+     */
+    startPlugin(identifier, persistent) {
+        if(!this.has(identifier)) {
+            return {success: false, msg: `Can't start: there is no plugin called '${identifier}'!`}
+        }
+        const plugin = this.get(identifier)
+        if(persistent) {
+            this.persistentStates[identifier] = true
+            this.savePluginStates()
+        }
+        if(!plugin.running) {
+            plugin._startPluginImpl(this._client)
+            return {success: true}
+        } else {
+            return {success: false, msg: "Can't start: plugin is already running!"}
+        }
+    }
+
+    /**
+     * Stop a plugin by a given plugin identifier.
+     * @param {String} identifier the plugin's identifier
+     * @param {Boolean} persistent true if the plugin shouldn't run after a bot restart
+     */
+    stopPlugin(identifier, persistent) {
+        if(!this.has(identifier)) {
+            return {success: false, msg: `Can't stop plugin: there is no plugin called '${identifier}'!`}
+        }
+        const plugin = this.get(identifier)
+        if(persistent) {
+            this.persistentStates[identifier] = false
+            this.savePluginStates()
+        }
+        if(plugin.running) {
+            plugin._stopPluginImpl(this._client)
+            return {success: true}
+        } else {
+            return {success: false, msg: "Can't stop plugin: plugin is not running!"}
+        }
+    }
+
+    /**
+     * Start all plugins besides those that were disabled by an entry in the 
+     * [persistentStates object]{@link PluginContainer#persistentStates}.
+     */
+    startPlugins() {
+        for(const [identifier, plugin] of this.entries()) {
+            if(!this.getPersistentState(identifier)) continue
+            if(!this.has(identifier)) {
+                logger.warn(`Can't load plugin state: no plugin found for identifier ${identifier}!`)
+                continue
+            }
+            plugin._startPluginImpl(this._client)
+        }
+    }
+
+    /**
+     * Stop all currently running plugins.
+     */
+    stopPlugins() {
+        for(const plugin of this.values()) {
+            if(plugin.running) {
+                plugin._stopPluginImpl(this._client)
+            }
+        }
+    }
+
+    getPersistentState(identifier) {
+        return this.persistentStates[identifier] == null ? true : this.persistentStates[identifier]
+    }
+
+    set client(client) {
+        this._client = client
+    }
+}
+module.exports = PluginContainer</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Command.html">Command</a></li><li><a href="CommandHidingPlugin.html">CommandHidingPlugin</a></li><li><a href="NoticeMePlugin.html">NoticeMePlugin</a></li><li><a href="Plugin.html">Plugin</a></li><li><a href="PluginContainer.html">PluginContainer</a></li><li><a href="PluginManagementPlugin.html">PluginManagementPlugin</a></li><li><a href="SoundboardPlugin.html">SoundboardPlugin</a></li></ul><h3>Global</h3><ul><li><a href="global.html#loadJSONSyncIfExists">loadJSONSyncIfExists</a></li><li><a href="global.html#writeJSONObjectSyncIfNotExists">writeJSONObjectSyncIfNotExists</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
