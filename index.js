@@ -1,4 +1,4 @@
 #!/usr/bin/env node --harmony
-const ModularDiscordBot = require('./modulardiscordbot.js');
+const ModularDiscordBot = require('./src/modulardiscordbot.js');
 
 const bot = new ModularDiscordBot()

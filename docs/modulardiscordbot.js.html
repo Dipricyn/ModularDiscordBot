@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: modulardiscordbot.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: modulardiscordbot.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const util = require('util');
+const Discord = require('discord.js');
+const logger = require('./logger.js');
+const auth = require('./../auth.json');
+const PluginContainer = require('./plugincontainer.js');
+const TimeTrackingPlugin = require('./plugins/timeTracking/timetrackingplugin.js');
+const CommandHidingPlugin = require('./plugins/commandHiding/commandhidingplugin.js');
+const SoundboardPlugin = require('./plugins/soundboard/soundboardplugin.js');
+const NoticeMePlugin = require('./plugins/soundboard/noticeMePlugin/noticemeplugin.js');
+const PluginManagementPlugin = require('./plugins/pluginManagement/pluginmanagementplugin.js');
+
+class ModularDiscordBot {
+
+    constructor() {
+        this.suppressReconnectMessages = false
+        this.reconnectTimerRunning = false
+        this.disconnected = true
+
+        this.handleExit = this.handleExit.bind(this)
+        this.handleTermination = this.handleTermination.bind(this)
+        this.handleClientError = this.handleClientError.bind(this)
+        this.handleDisconnect = this.handleDisconnect.bind(this)
+        this.handleReady = this.handleReady.bind(this)
+        this.handleResume = this.handleResume.bind(this)
+
+        const timeTrackingPlugin = new TimeTrackingPlugin()
+        const commandHidingPlugin = new CommandHidingPlugin()
+        const soundboardPlugin = new SoundboardPlugin()
+        const noticeMePlugin = new NoticeMePlugin(soundboardPlugin)
+        const pluginManagementPlugin = new PluginManagementPlugin(this)
+
+        this.pluginContainer = new PluginContainer()
+        this.pluginContainer.add(timeTrackingPlugin)
+        this.pluginContainer.add(commandHidingPlugin)
+        this.pluginContainer.add(soundboardPlugin)
+        this.pluginContainer.add(noticeMePlugin)
+        this.pluginContainer.add(pluginManagementPlugin)
+
+        process.on('unhandledRejection', err => {
+            logger.error(`unhandled rejection: ${err.stack}`);
+        })
+        
+        process.on('uncaughtException', err => {
+            logger.error(`uncaught exception: ${err.stack}`);
+        })
+        
+        process.on('exit', this.handleExit)
+        process.on('SIGINT', this.handleTermination)
+        process.on('SIGUSR1', this.handleTermination)
+        process.on('SIGUSR2', this.handleTermination)
+        process.on('SIGTERM', this.handleTermination)
+
+        this.login()
+    }
+
+    login() {
+        logger.info("logging in...")
+        this.client = null
+        this.client = new Discord.Client()
+        this.client.login(auth.token).catch(()=>{})
+        this.addEventHandlers()    
+    }
+
+    addEventHandlers() {
+        this.client.on('error', this.handleClientError)
+        this.client.on('warn', info => logger.warn(info))
+        this.client.on('disconnect', this.handleDisconnect)
+        this.client.on('reconnecting', () => logger.info('bot reconnecting...'))
+        this.client.on('resume', this.handleResume)
+        this.client.on('ready', this.handleReady)
+    }
+
+    startPlugins() {
+        for(const [identifier, plugin] of this.pluginContainer) {
+            if(!plugin.running) {
+                plugin._startPluginImpl(this.client)
+            }
+        }
+    }
+
+    stopPlugins() {
+        for(const [identifier, plugin] of this.pluginContainer) {
+            if(plugin.running) {
+                plugin._stopPluginImpl(this.client)
+            }
+        }
+    }
+
+    /**
+     * Start a plugin by a given plugin identifier.
+     * @param {string} identifier the plugin's identifier
+     */
+    startPlugin(identifier) {
+        if(!this.pluginContainer.has(identifier)) {
+            return {success: false, msg: `Can't start: there is no plugin called '${identifier}'!`}
+        }
+        const plugin = this.pluginContainer.get(identifier)
+        if(!plugin.running) {
+            plugin._startPluginImpl(this.client)
+            return {success: true}
+        } else {
+            return {success: false, msg: "Can't start: plugin is already running!"}
+        }
+    }
+
+    /**
+     * Stop a plugin by a given plugin identifier.
+     * @param {string} identifier the plugin's identifier
+     */
+    stopPlugin(identifier) {
+        if(!this.pluginContainer.has(identifier)) {
+            return {success: false, msg: `Can't stop plugin: there is no plugin called '${identifier}'!`}
+        }
+        const plugin = this.pluginContainer.get(identifier)
+        if(plugin.running) {
+            plugin._stopPluginImpl(this.client)
+            return {success: true}
+        } else {
+            return {success: false, msg: "Can't stop plugin: plugin is not running!"}
+        }
+    }
+    
+    scheduleManualReconnect() {
+        this.client &amp;&amp; this.client.destroy()
+        this.client = null
+        logger.info('fallback reconnect timer started')
+        setTimeout(()=>{
+            this.reconnectTimerRunning = false
+            login()
+        }, 30000)
+        this.reconnectTimerRunning = true
+    }
+
+    handleDisconnect(errEvent) {
+        this.disconnected = true
+        this.client &amp;&amp; this.client.destroy()
+        this.client = null
+        logger.warn(`websocket disconnected: ${util.inspect(errEvent.error)}`) 
+        if(!this.reconnectTimerRunning &amp;&amp; this.disconnected) {
+            this.scheduleManualReconnect()
+        }
+    }
+
+    handleClientError(errEvent) {
+        this.stopPlugins()
+        switch(errEvent.error.code){
+        case 'ECONNRESET':
+        case 'ENOTFOUND':
+            if(this.suppressReconnectMessages === false) {
+                this.suppressReconnectMessages = true
+                logger.warn(`client lost connection: ${util.inspect(errEvent.error)}`) 
+            }
+            if(!this.reconnectTimerRunning &amp;&amp; this.disconnected) {
+                this.scheduleManualReconnect()
+            }
+            break
+        default:
+            logger.error(`client error: ${util.inspect(errEvent.error)}`) 
+        } 
+    }
+
+    handleReady() {
+        this.suppressReconnectMessages = false
+        this.disconnected = false
+        logger.info("bot is ready")
+        if(this.client.guilds.size !== 1){
+            logger.error("Bot has to be in exactly one guild!")
+            process.exit(-1)
+            return
+        }
+        this.startPlugins()
+    }
+
+    handleResume() {
+        this.suppressReconnectMessages = false
+        this.disconnected = false
+        logger.info("websocket has resumed")
+        this.startPlugins()
+    }
+
+    handleExit() {
+        logger.info("process exit")
+        this.stopPlugins()
+    }
+
+    handleTermination() {
+        process.exit(-1)
+    }
+}
+module.exports = ModularDiscordBot</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Command.html">Command</a></li><li><a href="CommandHidingPlugin.html">CommandHidingPlugin</a></li><li><a href="NoticeMePlugin.html">NoticeMePlugin</a></li><li><a href="Plugin.html">Plugin</a></li><li><a href="PluginManagementPlugin.html">PluginManagementPlugin</a></li><li><a href="SoundboardPlugin.html">SoundboardPlugin</a></li></ul><h3>Global</h3><ul><li><a href="global.html#loadJSONSyncIfExists">loadJSONSyncIfExists</a></li><li><a href="global.html#writeJSONObjectSyncIfNotExists">writeJSONObjectSyncIfNotExists</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Aug 14 2018 01:19:59 GMT+0200 (Central European Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
