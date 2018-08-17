@@ -12,7 +12,7 @@ class Command {
 
     /**
      * @typedef {Object} Command~options
-     * @property {('direct'|'guild')} options.requireChannelType requires the message to be sent either 
+     * @property {('direct'|'guild')} options.requiredChannelType requires the message to be sent either 
      * as a direct message or in a guild channel
      * @property {Boolean} options.handleBotMsgs true if the handler should trigger on bot messages
      * @property {Boolean} options.elevated true if the command requires adminstrator privileges
@@ -34,7 +34,7 @@ class Command {
          * @type {Command#options}
          */
         this.options = {
-            requireChannelType: null,
+            requiredChannelType: null,
             handleBotMsgs: false,
             elevated: false
         }
@@ -66,8 +66,8 @@ class Command {
      */
     setOptions(options) {
         if(!options) return
-        if(options.requireChannelType != null) {
-            this.options.requireChannelType = options.requireChannelType
+        if(options.requiredChannelType != null) {
+            this.options.requiredChannelType = options.requiredChannelType
         }
         if(options.handleBotMsgs != null) {
             this.options.handleBotMsgs = options.handleBotMsgs

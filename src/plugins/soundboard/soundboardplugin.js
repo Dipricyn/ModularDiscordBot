@@ -56,7 +56,7 @@ class SoundboardPlugin extends Plugin {
                         message.channel.send('You must be in a voice channel to do that.')
                     }
                 })
-                .setOptions({requireChannelType: "guild"})
+                .setOptions({requiredChannelType: "guild"})
             )
             if(sound.files.length > 1) {
                 for(let i=0; i<sound.files.length; i++) {
@@ -72,7 +72,7 @@ class SoundboardPlugin extends Plugin {
                                 message.channel.send('You must be in a voice channel to do that.')
                             }
                         })
-                        .setOptions({requireChannelType: "guild"})
+                        .setOptions({requiredChannelType: "guild"})
                     )
                 }
             }

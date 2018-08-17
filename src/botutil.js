@@ -4,7 +4,7 @@ const logger = require('./logger');
 /**
  * Load a JSON object from a file if the file exists.
  * Does nothing if the file doesn't exist.
- * @param {string} path the path of the file to load
+ * @param {String} path the path of the file to load
  */
 module.exports.loadJSONSyncIfExists = function(path) {
     try {
@@ -19,8 +19,8 @@ module.exports.loadJSONSyncIfExists = function(path) {
 /**
  * Write an object in JSON format to a file if the file doesn't exist.
  * Does nothing if the file exists.
- * @param {string} path the path of the file to write to
- * @param {object} object the object that will be written to the file
+ * @param {String} path the path of the file to write to
+ * @param {Object} object the object that will be written to the file
  */
 module.exports.writeJSONObjectSyncIfNotExists = function(path, object) {
     try {

@@ -87,8 +87,8 @@ class Plugin {
         if(!command.options.handleBotMsgs) {
             if(message.author.bot) return
         }
-        if(command.options.requireChannelType) {
-            switch(command.options.requireChannelType){
+        if(command.options.requiredChannelType) {
+            switch(command.options.requiredChannelType){
                 case "direct":
                     if(["dm", "group"].indexOf(message.channel.type)===-1) {
                         message.channel.send("You must send this command in a direct message!")
@@ -102,7 +102,7 @@ class Plugin {
                     }
                     break;
                 default:
-                    throw Error(`unknown required channel type: ${command.options.requireChannelType}!`)
+                    throw Error(`unknown required channel type: ${command.options.requiredChannelType}!`)
             }
         }
         const guild = this.client.guilds.first()

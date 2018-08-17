@@ -53,8 +53,9 @@ class NoticeMePlugin extends Plugin {
         const guild = this.client.guilds.first()
         let count = 0
         let member
-        for(const [key, m] of guild.members) {
-            if(m.voiceChannel !== undefined) {
+        for(const m of guild.members.values()) {
+            if(m.voiceChannel !== undefined && m.voiceChannel.speakable 
+                && (m.voiceChannel !== m.voiceChannel.guild.afkChannel)) {
                 if(Math.random() < 1/++count) {
                     member = m
                 }
