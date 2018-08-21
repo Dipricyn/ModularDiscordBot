@@ -25,6 +25,11 @@ class TimeTrackingPlugin extends Plugin {
         this.addEventHandlers(this.client)
         this.memberDataContainer.loadMemberData().then(()=>{
             this.scanPresences(this.client)
+        }, (err)=> {
+            this.removeEventHandlers(this.client)
+            this.client = null
+            this.running = false
+            logger.error('terminated timetracking plugin: '+err)
         })
     }
     

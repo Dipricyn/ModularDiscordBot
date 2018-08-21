@@ -96,7 +96,7 @@ class PluginContainer extends Map {
             this.savePluginStates()
         }
         if(plugin.running) {
-            plugin._stopPluginImpl(this._client)
+            plugin._stopPluginImpl()
             return {success: true}
         } else {
             return {success: false, msg: "Can't stop plugin: plugin is not running!"}
@@ -114,7 +114,9 @@ class PluginContainer extends Map {
                 logger.warn(`Can't load plugin state: no plugin found for identifier ${identifier}!`)
                 continue
             }
-            plugin._startPluginImpl(this._client)
+            if(!plugin.running) {
+                plugin._startPluginImpl(this._client)
+            }
         }
     }
 
@@ -124,7 +126,7 @@ class PluginContainer extends Map {
     stopPlugins() {
         for(const plugin of this.values()) {
             if(plugin.running) {
-                plugin._stopPluginImpl(this._client)
+                plugin._stopPluginImpl()
             }
         }
     }

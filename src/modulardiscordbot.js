@@ -46,8 +46,6 @@ class ModularDiscordBot {
         
         process.on('exit', this.handleExit)
         process.on('SIGINT', this.handleTermination)
-        process.on('SIGUSR1', this.handleTermination)
-        process.on('SIGUSR2', this.handleTermination)
         process.on('SIGTERM', this.handleTermination)
 
         this.login()

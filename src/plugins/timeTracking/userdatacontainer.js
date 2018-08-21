@@ -12,15 +12,20 @@ class UserDataContainer {
 
     loadMemberData() {
         let that = this
-        return new Promise((resolve)=>{
+        return new Promise((resolve, reject)=>{
             try {
                 fs.readFile(this.memberDataFilePath, (err, content) => {
                     if(err) {
                         if(err.code !== "ENOENT") {
                             throw err
                         }    
+                        resolve()
                     } else {
                         try {
+                            if(content==""){
+                                resolve()
+                                return
+                            }
                             const jsonData = JSON.parse(content)
                             for (let [username, data] of Object.entries(jsonData)) {
                                 const user = new UserData()
@@ -28,11 +33,12 @@ class UserDataContainer {
                                 user.isOffline = true
                                 that.data[username] = user
                             }
+                            resolve()
                         } catch(err) {
                             logger.error(`${err} occured while parsing member data:\n${content}`)
+                            reject(err)
                         }
                     }
-                    resolve()
                 })
             } catch(err) {
                 if(err && (err.code !== "ENOENT")) {

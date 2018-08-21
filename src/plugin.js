@@ -128,7 +128,7 @@ class Plugin {
         this.startPlugin()
     }
 
-    _stopPluginImpl(client) {
+    _stopPluginImpl() {
         this.stopPlugin()
         this.client.removeListener('message', this._handleCommandImpl)
         this.client = null
