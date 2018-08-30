@@ -8,6 +8,7 @@ const CommandHidingPlugin = require('./plugins/commandHiding/commandhidingplugin
 const SoundboardPlugin = require('./plugins/soundboard/soundboardplugin.js');
 const NoticeMePlugin = require('./plugins/soundboard/noticeMePlugin/noticemeplugin.js');
 const PluginManagementPlugin = require('./plugins/pluginManagement/pluginmanagementplugin.js');
+const MusicQueuePlugin = require('./plugins/musicQueue/musicqueueplugin.js');
 
 class ModularDiscordBot {
 
@@ -28,6 +29,7 @@ class ModularDiscordBot {
         const soundboardPlugin = new SoundboardPlugin()
         const noticeMePlugin = new NoticeMePlugin(soundboardPlugin)
         const pluginManagementPlugin = new PluginManagementPlugin(this)
+        const musicQueuePlugin = new MusicQueuePlugin()
 
         this.pluginContainer = new PluginContainer("./data/pluginstates.json")
         this.pluginContainer.add(timeTrackingPlugin)
@@ -35,6 +37,7 @@ class ModularDiscordBot {
         this.pluginContainer.add(soundboardPlugin)
         this.pluginContainer.add(noticeMePlugin)
         this.pluginContainer.add(pluginManagementPlugin)
+        this.pluginContainer.add(musicQueuePlugin)
 
         process.on('unhandledRejection', err => {
             logger.error(`unhandled rejection: ${err.stack}`);

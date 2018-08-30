@@ -19,7 +19,8 @@
     "mkdirp": "^0.5.1",
     "moment": "^2.22.2",
     "node-opus": "^0.3.0",
-    "winston": "^3.0.0"
+    "winston": "^3.0.0",
+    "ytdl-core": "^0.24.0"
   },
   "repository": {
     "type": "git",

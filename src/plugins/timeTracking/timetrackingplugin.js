@@ -59,19 +59,22 @@ class TimeTrackingPlugin extends Plugin {
     }
 
     printTimes(channel) {
-        let sorted = []
-        for (const [key, value] of Object.entries(this.memberDataContainer.data)) {
-            sorted.push([key,value.totalTime.asHours()])
+        let msg
+        if(Object.keys(this.memberDataContainer.data).length>0) {
+            let sorted = []
+            for (const [key, value] of Object.entries(this.memberDataContainer.data)) {
+                sorted.push([key,value.totalTime.asHours()])
+            }
+            sorted.sort((a,b)=> b[1]-a[1])
+            msg = ""
+            let i=1
+            for (const [key, value] of sorted) {
+                if(key===this.client.user.username) continue
+                msg += `${i}. ${key}: ${value.toFixed(2)} hours.\n`
+                i++
+            }
         }
-        sorted.sort((a,b)=> b[1]-a[1])
-        let msg = ""
-        let i=1
-        for (const [key, value] of sorted) {
-            if(key===this.client.user.username) continue
-            msg += `${i}. ${key}: ${value.toFixed(2)} hours.\n`
-            i++
-        }
-        if (!msg || msg === "") {
+        if(!msg) {
             msg = "No one listed."
         }
         channel.send(msg)
