@@ -50,7 +50,7 @@ class NoticeMePlugin extends Plugin {
     }
     
     onNoticeMe(sound){
-        const guild = this.client.guilds.first()
+        const guild = this.client.guilds.cache.first()
         let count = 0
         let member
         for(const m of guild.members.values()) {

@@ -56,8 +56,8 @@ class ModularDiscordBot {
         this.client = null
         this.client = new Discord.Client()
         this.pluginContainer.client = this.client
-        this.client.login(auth.token).catch(()=>{})
-        this.addEventHandlers()    
+        this.addEventHandlers()
+        this.client.login(auth.token).catch(error => logger.info(`error logging in: ${error}`))
     }
 
     addEventHandlers() {
@@ -114,7 +114,7 @@ class ModularDiscordBot {
         this.suppressReconnectMessages = false
         this.disconnected = false
         logger.info("bot is ready")
-        if(this.client.guilds.size !== 1){
+        if(this.client.guilds.cache.size !== 1){
             logger.error("Bot has to be in exactly one guild!")
             process.exit(-1)
             return

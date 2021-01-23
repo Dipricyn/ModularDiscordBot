@@ -39,11 +39,11 @@ class TimeTrackingPlugin extends Plugin {
     }
 
     scanPresences(client) {
-        if(client.guilds.size===0){
+        if(client.guilds.cache.size===0){
             return
         }
-        const guild = client.guilds.values().next().value
-        const values = guild.members.values()
+        const guild = client.guilds.cache.values().next().value
+        const values = guild.members.cache.values()
         for(let newMember of values) {
             const username = newMember.user.username  
             const status = newMember.presence.status     

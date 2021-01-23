@@ -105,7 +105,7 @@ class Plugin {
                     throw Error(`unknown required channel type: ${command.options.requiredChannelType}!`)
             }
         }
-        const guild = this.client.guilds.first()
+        const guild = this.client.guilds.cache.first()
         if(command.options.elevated) {
             if(!guild.member(message.author).hasPermission("ADMINISTRATOR")) {
                 message.channel.send("Insufficient permissions! You need to be an administrator to do that.")
