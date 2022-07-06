@@ -19,7 +19,7 @@
     "discord.js": "^12.5.1",
     "erlpack": "^0.1.3",
     "mkdirp": "^1.0.4",
-    "moment": "^2.22.2",
+    "moment": "^2.29.4",
     "sodium": "^3.0.2",
     "utf-8-validate": "^5.0.4",
     "winston": "^3.0.0",
