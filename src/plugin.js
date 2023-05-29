@@ -1,3 +1,4 @@
+const { Client, Event } = require('discord.js');
 const mkdirp = require('mkdirp');
 const path = require('path');
 const botutil = require('./botutil.js');
@@ -124,13 +125,13 @@ class Plugin {
             this.config = botutil.loadJSONSyncIfExists(this.configFileLocation())
         }
         this.running = true
-        this.client.on('message', this._handleCommandImpl)
+        this.client.on(Client.MessageCreate, this._handleCommandImpl)
         this.startPlugin()
     }
 
     _stopPluginImpl() {
         this.stopPlugin()
-        this.client.removeListener('message', this._handleCommandImpl)
+        this.client.removeListener(Client.MessageCreate, this._handleCommandImpl)
         this.client = null
         this.running = false
     }

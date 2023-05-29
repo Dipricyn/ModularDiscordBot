@@ -1,13 +1,11 @@
 const util = require('util');
-const Discord = require('discord.js');
+const { Client, Discord, IntentsBitField, Event, Partials } = require('discord.js');
 const logger = require('./logger.js');
 const auth = require('./../auth.json');
 const PluginContainer = require('./plugincontainer.js');
-const TimeTrackingPlugin = require('./plugins/timeTracking/timetrackingplugin.js');
 const CommandHidingPlugin = require('./plugins/commandHiding/commandhidingplugin.js');
-const SoundboardPlugin = require('./plugins/soundboard/soundboardplugin.js');
-const NoticeMePlugin = require('./plugins/soundboard/noticeMePlugin/noticemeplugin.js');
 const PluginManagementPlugin = require('./plugins/pluginManagement/pluginmanagementplugin.js');
+const QuizPlugin = require('./plugins/quiz/quizplugin.js');
 
 class ModularDiscordBot {
 
@@ -23,17 +21,13 @@ class ModularDiscordBot {
         this.handleReady = this.handleReady.bind(this)
         this.handleResume = this.handleResume.bind(this)
 
-        const timeTrackingPlugin = new TimeTrackingPlugin()
+        const quizPlugin = new QuizPlugin()
         const commandHidingPlugin = new CommandHidingPlugin()
-        const soundboardPlugin = new SoundboardPlugin()
-        const noticeMePlugin = new NoticeMePlugin(soundboardPlugin)
         const pluginManagementPlugin = new PluginManagementPlugin(this)
 
         this.pluginContainer = new PluginContainer("./data/pluginstates.json")
-        this.pluginContainer.add(timeTrackingPlugin)
+        this.pluginContainer.add(quizPlugin)
         this.pluginContainer.add(commandHidingPlugin)
-        this.pluginContainer.add(soundboardPlugin)
-        this.pluginContainer.add(noticeMePlugin)
         this.pluginContainer.add(pluginManagementPlugin)
 
         process.on('unhandledRejection', err => {
@@ -54,15 +48,28 @@ class ModularDiscordBot {
     login() {
         logger.info("logging in...")
         this.client = null
-        this.client = new Discord.Client()
+		
+		const myIntents = new IntentsBitField()
+		myIntents.add([IntentsBitField.Flags.DirectMessageTyping,
+			IntentsBitField.Flags.DirectMessages,
+			IntentsBitField.Flags.GuildMessages,
+			IntentsBitField.Flags.Guilds,
+			IntentsBitField.Flags.MessageContent])
+			
+		const myPartials = [Partials.Channel,
+			Partials.Message
+		]
+
+        this.client = new Client({ intents: myIntents, partials: myPartials })
         this.pluginContainer.client = this.client
         this.addEventHandlers()
         this.client.login(auth.token).catch(error => logger.info(`error logging in: ${error}`))
     }
 
     addEventHandlers() {
-        this.client.on('error', this.handleClientError)
-        this.client.on('warn', info => logger.warn(info))
+        this.client.on(Client.Error, this.handleClientError)
+        this.client.on(Client.Warn, info => logger.warn(info))
+        this.client.on('messageCreate', info => logger.warn(info))
         this.client.on('disconnect', this.handleDisconnect)
         this.client.on('reconnecting', () => logger.info('bot reconnecting...'))
         this.client.on('resume', this.handleResume)
